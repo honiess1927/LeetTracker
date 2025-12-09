@@ -8,7 +8,7 @@ from rich.table import Table
 from rich import box
 
 from lcr.database import get_db, ProblemRepository, ReviewRepository, SessionRepository
-from lcr.utils import default_scheduler, DelayCascade, DateTimeHelper, InputParser
+from lcr.utils import default_scheduler, DelayCascade, DateTimeHelper, InputParser, TitleParser
 
 app = typer.Typer(help="LeetCode Repetition (LCR) - Spaced Repetition for Problem Reviews")
 console = Console()
@@ -246,10 +246,12 @@ def review(
         # Past reviews table
         if completed_reviews:
             past_table = Table(title="Past Reviews (Completed)", box=box.ROUNDED)
-            past_table.add_column("Problem ID", style="cyan")
+            past_table.add_column("ID", style="cyan", no_wrap=True)
+            past_table.add_column("Diff", style="white", no_wrap=True)
+            past_table.add_column("Title", style="white")
             past_table.add_column("Scheduled", style="yellow")
             past_table.add_column("Completed", style="green")
-            past_table.add_column("Status", style="white")
+            past_table.add_column("Status", style="magenta")
             
             for review in completed_reviews:
                 scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
@@ -261,8 +263,14 @@ def review(
                 else:
                     status = f"[red]⚠ Delayed {delay} day(s)[/red]"
                 
+                # Parse title to extract difficulty and clean title
+                difficulty, clean_title = TitleParser.parse_title(review.problem.title or "")
+                difficulty_str = TitleParser.format_difficulty(difficulty)
+                
                 past_table.add_row(
                     review.problem.problem_id,
+                    difficulty_str,
+                    clean_title,
                     scheduled_str,
                     completed_str,
                     status
@@ -274,8 +282,10 @@ def review(
         # Future reviews table
         if pending_reviews:
             future_table = Table(title="Future Reviews (Scheduled)", box=box.ROUNDED)
-            future_table.add_column("Problem ID", style="cyan")
-            future_table.add_column("Scheduled Date", style="yellow")
+            future_table.add_column("ID", style="cyan", no_wrap=True)
+            future_table.add_column("Diff", style="white", no_wrap=True)
+            future_table.add_column("Title", style="white")
+            future_table.add_column("Scheduled", style="yellow")
             future_table.add_column("Days Until", style="magenta")
             future_table.add_column("Iteration", style="blue")
             
@@ -283,8 +293,14 @@ def review(
                 scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
                 days_until = (review.scheduled_date - now).days
                 
+                # Parse title to extract difficulty and clean title
+                difficulty, clean_title = TitleParser.parse_title(review.problem.title or "")
+                difficulty_str = TitleParser.format_difficulty(difficulty)
+                
                 future_table.add_row(
                     review.problem.problem_id,
+                    difficulty_str,
+                    clean_title,
                     scheduled_str,
                     f"+{days_until}",
                     f"#{review.iteration_number}"
