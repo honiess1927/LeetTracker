@@ -65,6 +65,16 @@ lcr add 42 --times 3
 lcr add 100 --date 2024-12-31
 ```
 
+### Plan a Problem for Today
+
+```bash
+# Quickly add a problem to review today (shortcut for --date today)
+lcr plan 100
+
+# Plan with formatted input
+lcr plan "(M) 215. Kth Largest Element"
+```
+
 ### Check In After Completing a Review
 
 ```bash

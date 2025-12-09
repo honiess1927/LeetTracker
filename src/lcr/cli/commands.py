@@ -111,6 +111,52 @@ def add(
 
 
 @app.command()
+def plan(
+    problem_input: str = typer.Argument(..., help="Problem ID or formatted string (e.g., '1', '1. Two Sum', '(E) 1. Two Sum')"),
+    title: Optional[str] = typer.Option(None, "--title", help="Problem title (optional, overrides parsed title)"),
+):
+    """Add a problem to review today (shortcut for --date today)."""
+    try:
+        # Initialize database
+        db = get_db()
+        
+        # Parse input to extract problem_id and display_title
+        try:
+            problem_id, parsed_title = InputParser.parse_problem_input(problem_input)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
+        
+        # Use provided title if specified, otherwise use parsed title
+        final_title = title if title else parsed_title
+        
+        # Get or create problem
+        problem = ProblemRepository.get_or_create(problem_id, final_title)
+        
+        # Get today's date
+        now = DateTimeHelper.now_utc()
+        today = DateTimeHelper.combine_date_time(now.date())
+        
+        # Create chain ID
+        chain_id = f"{problem_id}-plan-{now.timestamp()}"
+        
+        # Check for duplicate
+        if ReviewRepository.check_duplicate(problem, today, chain_id):
+            console.print(f"[yellow]Review for problem {problem_id} already planned for today.[/yellow]")
+            return
+        
+        # Create single review for today
+        ReviewRepository.create(problem, chain_id, today, iteration_number=0)
+        
+        today_str = DateTimeHelper.format_date(today)
+        console.print(f"[green]✓[/green] Planned problem [bold]{problem_id}[/bold] for review today ([bold]{today_str}[/bold])")
+        
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
 def checkin(
     problem_input: str = typer.Argument(..., help="Problem ID or formatted string"),
 ):
