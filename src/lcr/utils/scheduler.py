@@ -169,5 +169,24 @@ class SpacedRepetitionScheduler:
         return last_review_date + timedelta(days=interval)
 
 
+def get_configured_scheduler() -> SpacedRepetitionScheduler:
+    """Get a scheduler instance configured from settings.
+    
+    Returns:
+        SpacedRepetitionScheduler configured with current settings
+    """
+    try:
+        from lcr.config import get_settings
+        settings = get_settings()
+        return SpacedRepetitionScheduler(
+            base_intervals=settings.intervals,
+            randomization_percentage=settings.randomization * 100,  # Convert 0.15 to 15.0
+        )
+    except ImportError:
+        # Fallback to default if config not available
+        return SpacedRepetitionScheduler()
+
+
 # Default scheduler instance with standard intervals
-default_scheduler = SpacedRepetitionScheduler()
+# This will use config values if available, otherwise defaults
+default_scheduler = get_configured_scheduler()

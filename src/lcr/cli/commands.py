@@ -9,6 +9,7 @@ from rich import box
 
 from lcr.database import get_db, ProblemRepository, ReviewRepository, SessionRepository
 from lcr.utils import default_scheduler, DelayCascade, DateTimeHelper, InputParser, TitleParser
+from lcr.config import get_settings
 
 app = typer.Typer(help="LeetCode Repetition (LCR) - Spaced Repetition for Problem Reviews")
 console = Console()
@@ -17,7 +18,7 @@ console = Console()
 @app.command()
 def add(
     problem_input: str = typer.Argument(..., help="Problem ID or formatted string (e.g., '1', '1. Two Sum', '(E) 1. Two Sum')"),
-    times: int = typer.Option(4, "--times", "-t", help="Number of review intervals (default: 4)"),
+    times: Optional[int] = typer.Option(None, "--times", "-t", help="Number of review intervals (uses config default if not specified)"),
     date: Optional[str] = typer.Option(None, "--date", "-d", help="Specific review date (yyyy-MM-dd)"),
     title: Optional[str] = typer.Option(None, "--title", help="Problem title (optional, overrides parsed title)"),
 ):
@@ -64,6 +65,11 @@ def add(
             # Generate spaced repetition schedule
             now = DateTimeHelper.now_utc()
             chain_id = f"{problem_id}-{now.timestamp()}"
+            
+            # Use configured default if times not specified
+            if times is None:
+                settings = get_settings()
+                times = settings.default_review_times
             
             # Generate schedule with randomization
             schedule = default_scheduler.generate_schedule(now, num_reviews=times, apply_randomization=True)
@@ -349,6 +355,91 @@ def start(
         console.print(f"[green]✓[/green] Timer started for problem [bold]{problem_id}[/bold]")
         console.print(f"[blue]Started at:[/blue] {start_time_str}")
         
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def delete(
+    problem_input: str = typer.Argument(..., help="Problem ID or formatted string"),
+    all_reviews: bool = typer.Option(False, "--all", "-a", help="Delete all reviews including completed ones"),
+):
+    """Delete pending reviews for a problem."""
+    try:
+        db = get_db()
+        
+        # Parse input to extract problem_id
+        try:
+            problem_id = InputParser.extract_id(problem_input)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
+        
+        # Get problem
+        problem = ProblemRepository.get_by_id(problem_id)
+        if not problem:
+            console.print(f"[red]Error:[/red] Problem {problem_id} not found.")
+            raise typer.Exit(1)
+        
+        # Get reviews to delete
+        from lcr.models import Review
+        if all_reviews:
+            # Delete all reviews (pending and completed)
+            reviews_to_delete = [r for r in Review.select().where(Review.problem == problem)]
+            review_type = "all"
+        else:
+            # Delete only pending reviews
+            reviews_to_delete = [r for r in Review.select().where(
+                (Review.problem == problem) &
+                (Review.status == "pending")
+            )]
+            review_type = "pending"
+        
+        if not reviews_to_delete:
+            if all_reviews:
+                console.print(f"[yellow]No reviews found for problem {problem_id}.[/yellow]")
+            else:
+                console.print(f"[yellow]No pending reviews found for problem {problem_id}.[/yellow]")
+                console.print("[blue]Tip:[/blue] Use --all flag to delete completed reviews too.")
+            return
+        
+        # Show what will be deleted
+        console.print(f"[yellow]Found {len(reviews_to_delete)} {review_type} review(s) for problem {problem_id}:[/yellow]")
+        
+        from rich.table import Table
+        table = Table(box=box.ROUNDED)
+        table.add_column("Scheduled", style="yellow")
+        table.add_column("Status", style="cyan")
+        table.add_column("Iteration", style="magenta")
+        
+        for review in reviews_to_delete:
+            scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
+            status_str = review.status.capitalize()
+            table.add_row(scheduled_str, status_str, f"#{review.iteration_number}")
+        
+        console.print(table)
+        
+        # Confirm deletion
+        confirm = typer.confirm(f"\nDelete {len(reviews_to_delete)} review(s)?")
+        
+        if not confirm:
+            console.print("[blue]Deletion cancelled.[/blue]")
+            return
+        
+        # Delete reviews
+        deleted_count = 0
+        for review in reviews_to_delete:
+            review.delete_instance()
+            deleted_count += 1
+        
+        console.print(f"[green]✓[/green] Deleted {deleted_count} review(s) for problem [bold]{problem_id}[/bold]")
+        
+        # Check if problem has any remaining reviews
+        remaining_reviews = Review.select().where(Review.problem == problem).count()
+        if remaining_reviews == 0:
+            console.print(f"[blue]ℹ[/blue] Problem {problem_id} has no remaining reviews.")
+            
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)

@@ -8,6 +8,9 @@ peewee==3.17.0
 # Date/time utilities
 python-dateutil==2.8.2
 
+# Configuration file support
+pyyaml==6.0.1
+
 # Development dependencies
 pytest==7.4.3
 pytest-cov==4.1.0
