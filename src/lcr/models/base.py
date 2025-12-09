@@ -1,9 +1,9 @@
 """Base model configuration for all database models."""
 
-from peewee import Model, SqliteDatabase
+from peewee import Model, DatabaseProxy
 
-# Database instance will be initialized by connection manager
-database = SqliteDatabase(None)
+# Database proxy will be initialized by connection manager
+database = DatabaseProxy()
 
 
 class BaseModel(Model):

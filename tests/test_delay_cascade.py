@@ -12,15 +12,15 @@ from lcr.utils.delay_cascade import DelayCascade
 @pytest.fixture
 def test_db():
     """Create an in-memory test database."""
-    test_database = SqliteDatabase(":memory:")
-    database.bind([Problem, Review], bind_refs=False, bind_backrefs=False)
-    database.init(":memory:", pragmas={"foreign_keys": 1})
-    database.connect()
-    database.execute_sql('PRAGMA foreign_keys = ON;')
-    database.create_tables([Problem, Review])
-    yield database
-    database.drop_tables([Problem, Review])
-    database.close()
+    from lcr.database import get_db
+    
+    # Initialize in-memory database
+    db = get_db(":memory:")
+    yield db
+    
+    # Cleanup
+    db.drop_tables([Problem, Review])
+    db.close()
 
 
 @pytest.fixture

@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from datetime import datetime
 from peewee import SqliteDatabase
 from typing import Optional
 
@@ -30,7 +31,29 @@ class DatabaseManager:
 
     def initialize(self) -> None:
         """Initialize the database connection and create tables if needed."""
-        # Initialize the database connection
+        # Initialize the database connection with proper datetime handling
+        import sqlite3
+        
+        # Register datetime adapters for SQLite
+        def adapt_datetime(dt):
+            return dt.isoformat()
+        
+        def convert_datetime(s):
+            from datetime import datetime
+            if isinstance(s, bytes):
+                s = s.decode('utf-8')
+            # Handle timezone-aware datetimes
+            if s.endswith('+00:00') or 'T' in s:
+                try:
+                    return datetime.fromisoformat(s.replace('Z', '+00:00'))
+                except:
+                    return datetime.fromisoformat(s)
+            return datetime.fromisoformat(s)
+        
+        sqlite3.register_adapter(datetime, adapt_datetime)
+        sqlite3.register_converter("timestamp", convert_datetime)
+        sqlite3.register_converter("datetime", convert_datetime)
+        
         self._db = SqliteDatabase(
             self.db_path,
             pragmas={
@@ -38,6 +61,8 @@ class DatabaseManager:
                 "journal_mode": "wal",  # Write-Ahead Logging for better concurrency
                 "cache_size": -1024 * 64,  # 64MB cache
             },
+            # Enable datetime conversion
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
 
         # Bind the database to models
@@ -119,3 +144,16 @@ def init_database(db_path: Optional[str] = None) -> None:
     global _db_manager
     _db_manager = DatabaseManager(db_path)
     _db_manager.initialize()
+
+
+def get_db(db_path: Optional[str] = None) -> SqliteDatabase:
+    """Get the database connection.
+    
+    Args:
+        db_path: Path to the database file (only used on first call)
+        
+    Returns:
+        The SqliteDatabase instance
+    """
+    manager = get_db_manager(db_path)
+    return manager.get_connection()
