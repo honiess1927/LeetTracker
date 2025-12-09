@@ -42,16 +42,40 @@ class ProblemRepository:
     def get_or_create(problem_id: str, title: Optional[str] = None) -> Problem:
         """Get an existing problem or create it if it doesn't exist.
         
+        Parses the title to extract difficulty and clean title, storing them separately.
+        
         Args:
             problem_id: The problem identifier
-            title: Optional problem title
+            title: Optional problem title (may include difficulty prefix like "(E) Two Sum")
             
         Returns:
             The Problem instance
         """
+        # Import here to avoid circular dependency
+        from lcr.utils import TitleParser
+        
+        # Parse title to extract difficulty and clean title
+        if title:
+            difficulty, clean_title = TitleParser.parse_title(title)
+            difficulty_letter = TitleParser.difficulty_to_letter(difficulty)
+        else:
+            clean_title = None
+            difficulty_letter = None
+        
         problem, created = Problem.get_or_create(
-            problem_id=problem_id, defaults={"title": title}
+            problem_id=problem_id,
+            defaults={
+                "title": clean_title,
+                "difficulty": difficulty_letter
+            }
         )
+        
+        # Update if exists and title provided
+        if not created and title:
+            problem.title = clean_title
+            problem.difficulty = difficulty_letter
+            problem.save()
+        
         return problem
 
     @staticmethod

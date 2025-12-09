@@ -10,13 +10,15 @@ class Problem(BaseModel):
     
     Attributes:
         problem_id: The LeetCode problem identifier (e.g., '1', '42', '100')
-        title: Optional problem title for reference
+        title: Optional problem title for reference (clean, without difficulty prefix)
+        difficulty: Problem difficulty as single letter: 'E' (Easy), 'M' (Medium), 'H' (Hard), or None
         created_at: Timestamp when the problem was first registered
         updated_at: Timestamp when the problem was last updated
     """
 
     problem_id = CharField(unique=True, index=True, max_length=50)
     title = CharField(null=True, max_length=255)
+    difficulty = CharField(null=True, max_length=1)  # 'E', 'M', 'H'
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 

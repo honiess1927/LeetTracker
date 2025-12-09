@@ -73,3 +73,36 @@ class TitleParser:
             return "[red]H[/red]"
         else:
             return "[dim]-[/dim]"
+    
+    @staticmethod
+    def difficulty_to_letter(difficulty: Optional[str]) -> Optional[str]:
+        """Convert full difficulty name to single letter.
+        
+        Args:
+            difficulty: Full difficulty name ("Easy", "Medium", "Hard") or letter ("E", "M", "H")
+            
+        Returns:
+            Single letter: "E", "M", "H", or None
+            
+        Examples:
+            >>> difficulty_to_letter("Easy")
+            "E"
+            >>> difficulty_to_letter("M")
+            "M"
+            >>> difficulty_to_letter(None)
+            None
+        """
+        if not difficulty:
+            return None
+        
+        # If already a letter, return as-is
+        if difficulty in ("E", "M", "H"):
+            return difficulty
+        
+        # Convert full name to letter
+        mapping = {
+            "Easy": "E",
+            "Medium": "M",
+            "Hard": "H"
+        }
+        return mapping.get(difficulty)

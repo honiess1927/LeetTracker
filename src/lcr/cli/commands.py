@@ -195,6 +195,7 @@ def list():
         # Create table
         table = Table(title="Due Reviews", box=box.ROUNDED)
         table.add_column("Problem ID", style="cyan", no_wrap=True)
+        table.add_column("Diff", style="white", no_wrap=True, width=4)
         table.add_column("Title", style="white")
         table.add_column("Scheduled", style="yellow")
         table.add_column("Delay", style="red")
@@ -207,8 +208,12 @@ def list():
             
             scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
             
+            # Get difficulty from database field
+            difficulty_str = TitleParser.format_difficulty(review.problem.difficulty)
+            
             table.add_row(
                 review.problem.problem_id,
+                difficulty_str,
                 review.problem.title or "N/A",
                 scheduled_str,
                 f"[{delay_style}]{delay_str}[/{delay_style}]",
@@ -269,14 +274,13 @@ def review(
                 else:
                     status = f"[red]⚠ Delayed {delay} day(s)[/red]"
                 
-                # Parse title to extract difficulty and clean title
-                difficulty, clean_title = TitleParser.parse_title(review.problem.title or "")
-                difficulty_str = TitleParser.format_difficulty(difficulty)
+                # Get difficulty from database field
+                difficulty_str = TitleParser.format_difficulty(review.problem.difficulty)
                 
                 past_table.add_row(
                     review.problem.problem_id,
                     difficulty_str,
-                    clean_title,
+                    review.problem.title or "N/A",
                     scheduled_str,
                     completed_str,
                     status
@@ -299,14 +303,13 @@ def review(
                 scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
                 days_until = (review.scheduled_date - now).days
                 
-                # Parse title to extract difficulty and clean title
-                difficulty, clean_title = TitleParser.parse_title(review.problem.title or "")
-                difficulty_str = TitleParser.format_difficulty(difficulty)
+                # Get difficulty from database field
+                difficulty_str = TitleParser.format_difficulty(review.problem.difficulty)
                 
                 future_table.add_row(
                     review.problem.problem_id,
                     difficulty_str,
-                    clean_title,
+                    review.problem.title or "N/A",
                     scheduled_str,
                     f"+{days_until}",
                     f"#{review.iteration_number}"
