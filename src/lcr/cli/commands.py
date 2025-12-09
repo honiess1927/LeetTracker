@@ -8,7 +8,7 @@ from rich.table import Table
 from rich import box
 
 from lcr.database import get_db, ProblemRepository, ReviewRepository, SessionRepository
-from lcr.utils import default_scheduler, DelayCascade, DateTimeHelper
+from lcr.utils import default_scheduler, DelayCascade, DateTimeHelper, InputParser
 
 app = typer.Typer(help="LeetCode Repetition (LCR) - Spaced Repetition for Problem Reviews")
 console = Console()
@@ -16,18 +16,28 @@ console = Console()
 
 @app.command()
 def add(
-    problem_id: str = typer.Argument(..., help="LeetCode problem ID"),
+    problem_input: str = typer.Argument(..., help="Problem ID or formatted string (e.g., '1', '1. Two Sum', '(E) 1. Two Sum')"),
     times: int = typer.Option(4, "--times", "-t", help="Number of review intervals (default: 4)"),
     date: Optional[str] = typer.Option(None, "--date", "-d", help="Specific review date (yyyy-MM-dd)"),
-    title: Optional[str] = typer.Option(None, "--title", help="Problem title (optional)"),
+    title: Optional[str] = typer.Option(None, "--title", help="Problem title (optional, overrides parsed title)"),
 ):
     """Register a problem for review with spaced repetition schedule."""
     try:
         # Initialize database
         db = get_db()
         
+        # Parse input to extract problem_id and display_title
+        try:
+            problem_id, parsed_title = InputParser.parse_problem_input(problem_input)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
+        
+        # Use provided title if specified, otherwise use parsed title
+        final_title = title if title else parsed_title
+        
         # Get or create problem
-        problem = ProblemRepository.get_or_create(problem_id, title)
+        problem = ProblemRepository.get_or_create(problem_id, final_title)
         
         if date:
             # Single review on specific date
@@ -96,11 +106,18 @@ def add(
 
 @app.command()
 def checkin(
-    problem_id: str = typer.Argument(..., help="LeetCode problem ID"),
+    problem_input: str = typer.Argument(..., help="Problem ID or formatted string"),
 ):
     """Mark a review as completed and apply delay cascade if needed."""
     try:
         db = get_db()
+        
+        # Parse input to extract problem_id
+        try:
+            problem_id = InputParser.extract_id(problem_input)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
         
         # Get problem
         problem = ProblemRepository.get_by_id(problem_id)
@@ -285,14 +302,21 @@ def review(
 
 @app.command()
 def start(
-    problem_id: str = typer.Argument(..., help="LeetCode problem ID"),
+    problem_input: str = typer.Argument(..., help="Problem ID or formatted string"),
 ):
     """Start a timer session for a problem."""
     try:
         db = get_db()
         
+        # Parse input to extract problem_id
+        try:
+            problem_id, parsed_title = InputParser.parse_problem_input(problem_input)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
+        
         # Get or create problem
-        problem = ProblemRepository.get_or_create(problem_id)
+        problem = ProblemRepository.get_or_create(problem_id, parsed_title)
         
         # Check for existing active session
         active_session = SessionRepository.get_active_session_for_problem(problem)
@@ -316,11 +340,18 @@ def start(
 
 @app.command()
 def end(
-    problem_id: str = typer.Argument(..., help="LeetCode problem ID"),
+    problem_input: str = typer.Argument(..., help="Problem ID or formatted string"),
 ):
     """End timer session and automatically check in the review."""
     try:
         db = get_db()
+        
+        # Parse input to extract problem_id
+        try:
+            problem_id = InputParser.extract_id(problem_input)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
         
         # Get problem
         problem = ProblemRepository.get_by_id(problem_id)
