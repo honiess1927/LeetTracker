@@ -1,0 +1,21 @@
+# Core CLI dependencies
+typer[all]==0.9.0
+rich==13.7.0
+
+# Database ORM
+peewee==3.17.0
+
+# Date/time utilities
+python-dateutil==2.8.2
+
+# Development dependencies
+pytest==7.4.3
+pytest-cov==4.1.0
+black==23.12.1
+flake8==7.0.0
+mypy==1.8.0
+pylint==3.0.3
+
+# Testing utilities
+pytest-mock==3.12.0
+freezegun==1.4.0
