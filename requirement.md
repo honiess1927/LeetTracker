@@ -15,10 +15,19 @@
 The system shall allow users to register a problem ID for review.
 
 * **Parameters:**
-    * `problem_id` (Required): String or Integer representing the LeetCode problem.
+    * `problem_input` (Required): A string representing the problem. Supports formats like:
+        * Raw ID: `1`
+        * Formatted: `(E) 1. Two Sum` or `1. Two Sum`
     * `--times, -t` (Optional): Integer $m$. Default is 4. Specifies the number of review intervals to generate.
     * `--date, -d` (Optional): Date string (`yyyy-MM-dd`). Specifies a one-off, non-recurring review for a specific date.
 * **Logic:**
+    * **Parsing:** The system must parse `problem_input` to extract a unique numerical `problem_id` (see Section 4.3).
+    * **Storage:**
+        * Store the extracted `problem_id` as the unique identifier for logic.
+        * Store the full `problem_input` as the `display_title` for UI presentation.
+    * **Upsert (Update/Insert):**
+        * If `problem_id` "1" already exists, update its `display_title` to the new detailed string `(E) 1. Two Sum`.
+        * If it doesn't exist, create a new problem entry.
     * **Default Intervals:** The base intervals are $[1, 7, 18, 35]$ days.
     * **Randomization:** Each calculated interval $I$ shall be subject to a randomization factor of $\pm 15\%$. $I_{final} = \text{round}(I \times (1 \pm \text{random}(0, 0.15)))$.
     * **Schedule Generation:**
@@ -31,8 +40,9 @@ The system shall allow users to register a problem ID for review.
 The system shall allow users to mark a review as completed.
 
 * **Parameters:**
-    * `problem_id` (Required).
+    * `problem_input` (Required).
 * **Logic:**
+    * Parse `problem_input` to get `problem_id`.
     * Find the **earliest pending** review for this `problem_id`.
     * **Mark as Completed:** Update the record with the `actual_completion_date`.
     * **Orphan Check-in:** If no pending review exists for this ID, create a standalone "completed" log entry without generating future schedules.
@@ -80,6 +90,15 @@ If $R_i$ is scheduled for $D_{sched}$ but completed on $D_{actual}$:
 For interval $I$ (e.g., 7 days):
 $$I_{randomized} = \text{round}(I \times (1 + \text{uniform}(-0.15, 0.15)))$$
 *Constraint:* $I_{randomized} \ge 1$ (Review cannot be same-day unless explicitly requested).
+
+### 4.3. Input Parsing Algorithm
+The system shall use Regular Expressions to extract the Problem ID from user input to ensure consistency.
+
+* **Regex Pattern:** `^.*?(\d+)\..*$` (Looks for a number followed by a dot) OR simple integer matching if no dot is present.
+* **Examples:**
+    * Input: `(E) 1. Two Sum` -> ID: `1`, Title: `(E) 1. Two Sum`
+    * Input: `215. Kth Largest Element` -> ID: `215`, Title: `215. Kth Largest Element`
+    * Input: `42` -> ID: `42`, Title: `42` (or keep existing title if present in DB)
 
 ## 5. Non-Functional Requirements
 
