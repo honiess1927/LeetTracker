@@ -24,6 +24,15 @@ class DateTimeHelper:
             Current datetime with UTC timezone.
         """
         return datetime.now(timezone.utc)
+    
+    @staticmethod
+    def now_local() -> datetime:
+        """Get the current datetime in local timezone.
+        
+        Returns:
+            Current datetime with local timezone.
+        """
+        return datetime.now().astimezone()
 
     @staticmethod
     def to_utc(dt: datetime) -> datetime:
@@ -177,12 +186,14 @@ class DateTimeHelper:
         return dt.strftime(format_str)
 
     @staticmethod
-    def combine_date_time(d: date, t: Optional[time] = None) -> datetime:
-        """Combine a date and time into a datetime in UTC.
+    def combine_date_time(d: date, t: Optional[time] = None, use_local: bool = False) -> datetime:
+        """Combine a date and time into a datetime.
         
         Args:
             d: The date.
             t: The time. If None, uses midnight (00:00:00).
+            use_local: If True, interprets the date/time as local timezone and converts to UTC.
+                      If False, assumes UTC timezone.
             
         Returns:
             Combined datetime in UTC timezone.
@@ -190,7 +201,14 @@ class DateTimeHelper:
         if t is None:
             t = time(0, 0, 0)
         dt = datetime.combine(d, t)
-        return dt.replace(tzinfo=timezone.utc)
+        
+        if use_local:
+            # Treat as local time and convert to UTC
+            local_dt = dt.astimezone()
+            return local_dt.astimezone(timezone.utc)
+        else:
+            # Treat as UTC
+            return dt.replace(tzinfo=timezone.utc)
 
     @staticmethod
     def start_of_day(dt: datetime) -> datetime:

@@ -133,12 +133,13 @@ def plan(
         # Get or create problem
         problem = ProblemRepository.get_or_create(problem_id, final_title)
         
-        # Get today's date
-        now = DateTimeHelper.now_utc()
-        today = DateTimeHelper.combine_date_time(now.date())
+        # Get today's date in local timezone
+        now_local = DateTimeHelper.now_local()
+        today = DateTimeHelper.combine_date_time(now_local.date(), use_local=True)
         
         # Create chain ID
-        chain_id = f"{problem_id}-plan-{now.timestamp()}"
+        now_utc = DateTimeHelper.now_utc()
+        chain_id = f"{problem_id}-plan-{now_utc.timestamp()}"
         
         # Check for duplicate
         if ReviewRepository.check_duplicate(problem, today, chain_id):
