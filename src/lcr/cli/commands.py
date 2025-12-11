@@ -15,6 +15,53 @@ app = typer.Typer(help="LeetCode Repetition (LCR) - Spaced Repetition for Proble
 console = Console()
 
 
+def display_due_reviews():
+    """Helper function to display due reviews (same as lcr list)."""
+    try:
+        # Get due reviews
+        now = DateTimeHelper.now_utc()
+        due_reviews = ReviewRepository.get_due_reviews(now)
+        
+        if not due_reviews:
+            console.print("\n[green]✓[/green] No reviews due today! Great job! 🎉")
+            return
+        
+        # Create table
+        console.print()  # Add blank line before table
+        table = Table(title="Due Reviews", box=box.ROUNDED)
+        table.add_column("Problem ID", style="cyan", no_wrap=True)
+        table.add_column("Diff", style="white", no_wrap=True, width=4)
+        table.add_column("Title", style="white")
+        table.add_column("Scheduled", style="yellow")
+        table.add_column("Delay", style="red")
+        table.add_column("Iteration", style="magenta")
+        
+        for review in due_reviews:
+            delay_days = review.delay_days()
+            delay_str = f"{delay_days} day(s)" if delay_days > 0 else "On time"
+            delay_style = "red" if delay_days > 0 else "green"
+            
+            scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
+            
+            # Get difficulty from database field
+            difficulty_str = TitleParser.format_difficulty(review.problem.difficulty)
+            
+            table.add_row(
+                review.problem.problem_id,
+                difficulty_str,
+                review.problem.title or "N/A",
+                scheduled_str,
+                f"[{delay_style}]{delay_str}[/{delay_style}]",
+                f"#{review.iteration_number}"
+            )
+        
+        console.print(table)
+        console.print(f"\n[bold]Total:[/bold] {len(due_reviews)} review(s) due")
+        
+    except Exception as e:
+        console.print(f"[red]Error displaying due reviews:[/red] {e}")
+
+
 @app.command()
 def add(
     problem_input: str = typer.Argument(..., help="Problem ID or formatted string (e.g., '1', '1. Two Sum', '(E) 1. Two Sum')"),
@@ -152,6 +199,9 @@ def plan(
         today_str = DateTimeHelper.format_date(today)
         console.print(f"[green]✓[/green] Planned problem [bold]{problem_id}[/bold] for review today ([bold]{today_str}[/bold])")
         
+        # Display all due reviews
+        display_due_reviews()
+        
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
@@ -219,6 +269,9 @@ def checkin(
             next_date = DateTimeHelper.format_date(next_review.scheduled_date)
             days_until = (next_review.scheduled_date - DateTimeHelper.now_utc()).days
             console.print(f"[blue]→[/blue] Next review: [bold]{next_date}[/bold] (in {days_until} days)")
+        
+        # Display all due reviews
+        display_due_reviews()
             
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
