@@ -161,10 +161,11 @@ class DateTimeHelper:
             format_str: The format string. Default is ISO format (YYYY-MM-DD).
             
         Returns:
-            Formatted date string.
+            Formatted date string in local timezone.
         """
         if isinstance(d, datetime):
-            d = d.date()
+            # Convert from UTC to local timezone before extracting date
+            d = DateTimeHelper.from_utc_to_local(d).date()
         return d.strftime(format_str)
 
     @staticmethod
