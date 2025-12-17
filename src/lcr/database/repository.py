@@ -154,20 +154,39 @@ class ReviewRepository:
 
     @staticmethod
     def get_due_reviews(as_of_date: Optional[datetime] = None) -> List[Review]:
-        """Get all reviews that are due (scheduled date <= as_of_date).
+        """Get all reviews that are due (scheduled on or before today's date in local time).
+        
+        Compares by DATE in local timezone, so all reviews scheduled for today (local time)
+        will appear regardless of their specific time.
         
         Args:
-            as_of_date: Date to check against (defaults to now)
+            as_of_date: Date to check against (defaults to now in UTC)
             
         Returns:
             List of due Review instances, sorted by scheduled date
         """
+        from datetime import timezone as tz, time as dt_time
+        
         if as_of_date is None:
-            as_of_date = datetime.utcnow()
+            as_of_date = datetime.now(tz.utc)
 
+        # Import DateTimeHelper to use its timezone conversion
+        from lcr.utils import DateTimeHelper
+        
+        # Get current date in local timezone
+        local_now = DateTimeHelper.from_utc_to_local(as_of_date)
+        current_local_date = local_now.date()
+        
+        # Calculate the end of today in local time, converted to UTC
+        # This gives us the UTC datetime representing end of today in local timezone
+        end_of_today_local = datetime.combine(current_local_date, dt_time(23, 59, 59))
+        # Convert to UTC
+        end_of_today_utc = end_of_today_local.astimezone(tz.utc)
+        
+        # Get all reviews scheduled up to end of today (in local timezone)
         return list(
             Review.select()
-            .where((Review.status == "pending") & (Review.scheduled_date <= as_of_date))
+            .where((Review.status == "pending") & (Review.scheduled_date <= end_of_today_utc))
             .order_by(Review.scheduled_date)
         )
 
@@ -257,13 +276,14 @@ class SessionRepository:
         
         Args:
             problem: The Problem instance
-            start_time: When the session started (defaults to now)
+            start_time: When the session started (defaults to now in UTC)
             
         Returns:
             The created Session instance
         """
         if start_time is None:
-            start_time = datetime.utcnow()
+            from datetime import timezone
+            start_time = datetime.now(timezone.utc)
 
         return Session.create(problem=problem, start_time=start_time, status="active")
 
