@@ -238,6 +238,70 @@ class DateTimeHelper:
         return dt_utc.replace(hour=23, minute=59, second=59, microsecond=999999)
 
     @staticmethod
+    def end_of_today_local_in_utc(as_of_date: Optional[datetime] = None) -> datetime:
+        """Get the end of today in local timezone, expressed as UTC.
+        
+        This is useful for database queries where you want to match "today"
+        in the user's local timezone, but need to compare against UTC timestamps.
+        
+        Args:
+            as_of_date: Reference datetime in UTC. If None, uses current time.
+            
+        Returns:
+            UTC datetime representing 23:59:59 of today in local timezone.
+            
+        Example:
+            If it's Dec 17, 2025 09:00 PST (17:00 UTC):
+            - Local date: 2025-12-17
+            - End of day local: 2025-12-17 23:59:59 PST
+            - Returned (in UTC): 2025-12-18 07:59:59 UTC
+        """
+        if as_of_date is None:
+            as_of_date = datetime.now(timezone.utc)
+        
+        # Convert to local timezone to get local date
+        local_now = DateTimeHelper.from_utc_to_local(as_of_date)
+        current_local_date = local_now.date()
+        
+        # Create datetime for end of day in local timezone
+        end_of_day_local = datetime.combine(current_local_date, time(23, 59, 59))
+        
+        # Convert back to UTC for database comparison
+        return end_of_day_local.astimezone(timezone.utc)
+
+    @staticmethod
+    def start_of_today_local_in_utc(as_of_date: Optional[datetime] = None) -> datetime:
+        """Get the start of today in local timezone, expressed as UTC.
+        
+        This is useful for database queries where you want to match "today"
+        in the user's local timezone, but need to compare against UTC timestamps.
+        
+        Args:
+            as_of_date: Reference datetime in UTC. If None, uses current time.
+            
+        Returns:
+            UTC datetime representing 00:00:00 of today in local timezone.
+            
+        Example:
+            If it's Dec 17, 2025 09:00 PST (17:00 UTC):
+            - Local date: 2025-12-17
+            - Start of day local: 2025-12-17 00:00:00 PST
+            - Returned (in UTC): 2025-12-17 08:00:00 UTC
+        """
+        if as_of_date is None:
+            as_of_date = datetime.now(timezone.utc)
+        
+        # Convert to local timezone to get local date
+        local_now = DateTimeHelper.from_utc_to_local(as_of_date)
+        current_local_date = local_now.date()
+        
+        # Create datetime for start of day in local timezone
+        start_of_day_local = datetime.combine(current_local_date, time(0, 0, 0))
+        
+        # Convert back to UTC for database comparison
+        return start_of_day_local.astimezone(timezone.utc)
+
+    @staticmethod
     def validate_date_range(
         start_date: datetime, end_date: datetime
     ) -> bool:

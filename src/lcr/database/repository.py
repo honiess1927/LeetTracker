@@ -165,23 +165,11 @@ class ReviewRepository:
         Returns:
             List of due Review instances, sorted by scheduled date
         """
-        from datetime import timezone as tz, time as dt_time
-        
-        if as_of_date is None:
-            as_of_date = datetime.now(tz.utc)
-
-        # Import DateTimeHelper to use its timezone conversion
         from lcr.utils import DateTimeHelper
         
-        # Get current date in local timezone
-        local_now = DateTimeHelper.from_utc_to_local(as_of_date)
-        current_local_date = local_now.date()
-        
-        # Calculate the end of today in local time, converted to UTC
-        # This gives us the UTC datetime representing end of today in local timezone
-        end_of_today_local = datetime.combine(current_local_date, dt_time(23, 59, 59))
-        # Convert to UTC
-        end_of_today_utc = end_of_today_local.astimezone(tz.utc)
+        # Use DateTimeHelper to get end of today in local time, expressed as UTC
+        # This allows us to match all reviews scheduled for "today" in the user's timezone
+        end_of_today_utc = DateTimeHelper.end_of_today_local_in_utc(as_of_date)
         
         # Get all reviews scheduled up to end of today (in local timezone)
         return list(
