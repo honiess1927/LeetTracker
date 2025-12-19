@@ -368,8 +368,12 @@ def review(
                 scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
                 completed_str = DateTimeHelper.format_date(review.actual_completion_date)
                 
-                delay = review.delay_days()
+                # Use date-based delay calculation (local timezone)
+                delay = DateTimeHelper.days_until_date(review.actual_completion_date, review.scheduled_date)
                 if delay == 0:
+                    status = "[green]✓ On Time[/green]"
+                elif delay < 0:
+                    # Completed before scheduled date (early)
                     status = "[green]✓ On Time[/green]"
                 else:
                     status = f"[red]⚠ Delayed {delay} day(s)[/red]"
@@ -401,7 +405,8 @@ def review(
             
             for review in pending_reviews:
                 scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
-                days_until = (review.scheduled_date - now).days
+                # Use date-based calculation (local timezone)
+                days_until = DateTimeHelper.days_until_date(review.scheduled_date, now)
                 
                 # Get difficulty from database field
                 difficulty_str = TitleParser.format_difficulty(review.problem.difficulty)

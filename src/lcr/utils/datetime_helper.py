@@ -302,6 +302,69 @@ class DateTimeHelper:
         return start_of_day_local.astimezone(timezone.utc)
 
     @staticmethod
+    def get_local_date(dt: datetime) -> date:
+        """Get the date in local timezone from a UTC datetime.
+        
+        Args:
+            dt: The UTC datetime to convert.
+            
+        Returns:
+            Date in local timezone.
+        """
+        local_dt = DateTimeHelper.from_utc_to_local(dt)
+        return local_dt.date()
+
+    @staticmethod
+    def days_until_date(target_dt: datetime, reference_dt: Optional[datetime] = None) -> int:
+        """Calculate days until a target date (date-based, not hour-based).
+        
+        Compares dates in local timezone, not absolute time difference.
+        This matches how people think about "days until" - based on calendar days.
+        
+        Args:
+            target_dt: The target datetime (typically in UTC from database).
+            reference_dt: The reference datetime (defaults to now in UTC).
+            
+        Returns:
+            Number of days until target date. Negative if target is in the past.
+            0 if target is today.
+            
+        Example:
+            - Today (local): 2025-12-19
+            - Target (local): 2025-12-20
+            - Returns: 1 (tomorrow)
+            
+            - Today (local): 2025-12-19 23:00
+            - Target (local): 2025-12-20 01:00  
+            - Returns: 1 (tomorrow, even though only 2 hours away)
+        """
+        if reference_dt is None:
+            reference_dt = datetime.now(timezone.utc)
+        
+        # Get dates in local timezone
+        target_local_date = DateTimeHelper.get_local_date(target_dt)
+        reference_local_date = DateTimeHelper.get_local_date(reference_dt)
+        
+        # Calculate date difference
+        delta = target_local_date - reference_local_date
+        return delta.days
+
+    @staticmethod  
+    def is_same_local_date(dt1: datetime, dt2: datetime) -> bool:
+        """Check if two datetimes represent the same date in local timezone.
+        
+        Args:
+            dt1: First datetime (typically in UTC).
+            dt2: Second datetime (typically in UTC).
+            
+        Returns:
+            True if both datetimes fall on the same local date.
+        """
+        date1 = DateTimeHelper.get_local_date(dt1)
+        date2 = DateTimeHelper.get_local_date(dt2)
+        return date1 == date2
+
+    @staticmethod
     def validate_date_range(
         start_date: datetime, end_date: datetime
     ) -> bool:

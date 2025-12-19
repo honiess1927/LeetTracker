@@ -154,10 +154,10 @@ class ReviewRepository:
 
     @staticmethod
     def get_due_reviews(as_of_date: Optional[datetime] = None) -> List[Review]:
-        """Get all reviews that are due (scheduled on or before today's date in local time).
+        """Get all reviews that are due (scheduled for today's date in local timezone).
         
-        Compares by DATE in local timezone, so all reviews scheduled for today (local time)
-        will appear regardless of their specific time.
+        Uses date-based comparison in local timezone. All reviews scheduled for today's
+        local date will appear, regardless of specific time.
         
         Args:
             as_of_date: Date to check against (defaults to now in UTC)
