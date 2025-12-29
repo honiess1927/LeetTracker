@@ -1,148 +1,332 @@
-# LeetCode Repetition (LCR) CLI
+# LeetCode Repetition (LCR)
 
-A command-line tool for tracking and scheduling LeetCode problem reviews using spaced repetition algorithms.
+A command-line tool for managing LeetCode problem reviews using spaced repetition to optimize long-term retention.
+
+## Why LCR?
+
+Solving a LeetCode problem once isn't enough for long-term retention. LCR uses **spaced repetition** - a scientifically proven learning technique - to schedule reviews at optimal intervals (1, 7, 18, 35 days by default), ensuring you truly master each problem.
 
 ## Features
 
-- 📅 **Smart Scheduling**: Automatically schedules reviews based on spaced repetition (1, 7, 18, 35 days)
-- ⚙️ **Customizable Configuration**: YAML-based config for intervals, defaults, and display preferences
-- ⏰ **Timer Sessions**: Track time spent solving problems
-- 📊 **Progress Tracking**: Visualize your review history and upcoming tasks
-- 🔄 **Delay Management**: Intelligent rescheduling when reviews are completed late
-- 🗑️ **Flexible Management**: Delete pending or all reviews for any problem
-- 💾 **Local Storage**: All data stored locally in SQLite database
-- 🎨 **Rich CLI Interface**: Beautiful tables and colored output
-
-## Requirements
-
-- Python 3.9 or higher
-- pip (Python package installer)
+- 📅 **Smart Scheduling** - Automatic review scheduling using spaced repetition
+- ⏰ **Time Tracking** - Built-in timer to track solving time
+- 📊 **Progress Visualization** - View past completions and upcoming reviews
+- 🔄 **Intelligent Rescheduling** - Automatically adjusts future reviews when delayed
+- ⚙️ **Customizable** - Configure intervals, defaults, and display preferences
+- 💾 **Local First** - All data stored locally in SQLite (no cloud required)
 
 ## Installation
 
-### Development Setup
+### Requirements
+- Python 3.9 or higher
 
-1. Clone the repository:
+### Setup
+
 ```bash
+# Clone the repository
 git clone https://github.com/honiess1927/LeetTracker.git
 cd LeetTracker
-```
 
-2. Create a virtual environment:
-```bash
+# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-3. Install dependencies:
-```bash
+# Install
 pip install -r requirements.txt
-```
-
-4. Install the package in editable mode:
-```bash
 pip install -e .
 ```
 
-## Usage
-
-### Add a Problem for Review
+## Quick Start
 
 ```bash
-# Add problem with default review intervals (uses config or 4 if not configured)
+# Add a problem with default review schedule
 lcr add 1
 
-# Add problem with title
+# View today's reviews
+lcr list
+
+# Complete a review
+lcr checkin 1
+
+# View your progress
+lcr review
+```
+
+## Commands
+
+### `lcr add` - Add Problems for Review
+
+Add problems with automatic spaced repetition scheduling.
+
+**Basic Usage:**
+```bash
+lcr add <problem_id>
+```
+
+**Examples:**
+```bash
+# Add by ID only
+lcr add 1
+
+# Add with title
 lcr add "1. Two Sum"
 
 # Add with difficulty tag
 lcr add "(E) 1. Two Sum"
 
-# Add problem with custom number of reviews
-lcr add 42 --times 3
+# Specify number of review intervals
+lcr add 42 --times 5
 
-# Schedule a one-off review for a specific date
+# Schedule for a specific date
 lcr add 100 --date 2024-12-31
 ```
 
-### Plan a Problem for Today
+**Example Output:**
+```
+✓ Created 4 reviews for problem 1
 
+                 Review Schedule for 1
+╭───────────┬─────────────────┬───────────────╮
+│ Iteration │ Scheduled Date  │ Days from Now │
+├───────────┼─────────────────┼───────────────┤
+│ 1         │ 2025-12-25      │ +1            │
+│ 2         │ 2025-12-31      │ +7            │
+│ 3         │ 2026-01-11      │ +18           │
+│ 4         │ 2026-01-28      │ +35           │
+╰───────────┴─────────────────┴───────────────╯
+```
+
+---
+
+### `lcr plan` - Quick Add for Today
+
+Shortcut to add a problem for review today.
+
+**Usage:**
 ```bash
-# Quickly add a problem to review today (shortcut for --date today)
-lcr plan 100
+lcr plan <problem_id>
+```
 
-# Plan with formatted input
+**Example:**
+```bash
 lcr plan "(M) 215. Kth Largest Element"
 ```
 
-### Check In After Completing a Review
+**Example Output:**
+```
+✓ Planned problem 215 for review today (2025-12-24)
 
-```bash
-# Check in problem by ID
-lcr checkin 1
+                           Due Reviews
+╭────────────┬──────┬─────────────────────────┬────────────┬─────────┬───────────╮
+│ Problem ID │ Diff │ Title                   │ Scheduled  │ Delay   │ Iteration │
+├────────────┼──────┼─────────────────────────┼────────────┼─────────┼───────────┤
+│ 215        │ M    │ Kth Largest Element     │ 2025-12-24 │ On time │ #0        │
+╰────────────┴──────┴─────────────────────────┴────────────┴─────────┴───────────╯
 
-# Check in with formatted input
-lcr checkin "215. Kth Largest Element"
+Total: 1 review(s) due
 ```
 
-### Delete Reviews
+---
 
-```bash
-# Delete pending reviews for a problem
-lcr delete 100
+### `lcr list` - View Today's Reviews
 
-# Delete ALL reviews (including completed) for a problem
-lcr delete 100 --all
-```
+Display all problems due for review today.
 
-### View Today's Tasks
-
+**Usage:**
 ```bash
 lcr list
 ```
 
-### View Progress History
+**Example Output (with reviews due):**
+```
+                           Due Reviews
+╭────────────┬──────┬─────────────────────────┬────────────┬─────────┬───────────╮
+│ Problem ID │ Diff │ Title                   │ Scheduled  │ Delay   │ Iteration │
+├────────────┼──────┼─────────────────────────┼────────────┼─────────┼───────────┤
+│ 1          │ E    │ Two Sum                 │ 2025-12-24 │ On time │ #1        │
+│ 42         │ M    │ Trapping Rain Water     │ 2025-12-24 │ On time │ #2        │
+│ 215        │ M    │ Kth Largest Element     │ 2025-12-23 │ 1 day(s)│ #3        │
+╰────────────┴──────┴─────────────────────────┴────────────┴─────────┴───────────╯
 
+Total: 3 review(s) due
+```
+
+**Example Output (no reviews):**
+```
+✓ No reviews due today! Great job! 🎉
+```
+
+---
+
+### `lcr checkin` - Complete a Review
+
+Mark a review as completed. Automatically applies delay cascade if the review was late.
+
+**Usage:**
 ```bash
-# View reviews from past 7 days and next 7 days
+lcr checkin <problem_id>
+```
+
+**Example:**
+```bash
+lcr checkin 1
+```
+
+**Example Output (on time):**
+```
+✓ Completed review for 1 on time!
+→ Next review: 2025-12-31 (in 7 days)
+
+                           Due Reviews
+╭────────────┬──────┬─────────────────────────┬────────────┬─────────┬───────────╮
+│ Problem ID │ Diff │ Title                   │ Scheduled  │ Delay   │ Iteration │
+├────────────┼──────┼─────────────────────────┼────────────┼─────────┼───────────┤
+│ 42         │ M    │ Trapping Rain Water     │ 2025-12-24 │ On time │ #2        │
+╰────────────┴──────┴─────────────────────────┴────────────┴─────────┴───────────╯
+
+Total: 1 review(s) due
+```
+
+**Example Output (late):**
+```
+✓ Completed review for 215
+⚠ Review was 2 day(s) late
+ℹ Updated 3 future review(s) by +2 day(s)
+
+                           Due Reviews
+╭────────────┬──────┬─────────────────────────┬────────────┬─────────┬───────────╮
+│ Problem ID │ Diff │ Title                   │ Scheduled  │ Delay   │ Iteration │
+├────────────┼──────┼─────────────────────────┼────────────┼─────────┼───────────┤
+│ 42         │ M    │ Trapping Rain Water     │ 2025-12-24 │ On time │ #2        │
+╰────────────┴──────┴─────────────────────────┴────────────┴─────────┴───────────╯
+
+Total: 1 review(s) due
+```
+
+---
+
+### `lcr review` - View Progress Calendar
+
+Show completed reviews and upcoming schedule.
+
+**Usage:**
+```bash
+lcr review [--days N]
+```
+
+**Examples:**
+```bash
+# Default: past 7 days and next 7 days
 lcr review
 
-# View with custom time range (e.g., 30 days)
+# Custom range: past/next 30 days
 lcr review --days 30
 ```
 
-### Track Time Spent
+**Example Output:**
+```
+                        Past Reviews (Completed)
+╭──────┬──────┬─────────────────────────┬────────────┬────────────┬───────────╮
+│ ID   │ Diff │ Title                   │ Scheduled  │ Completed  │ Status    │
+├──────┼──────┼─────────────────────────┼────────────┼────────────┼───────────┤
+│ 1    │ E    │ Two Sum                 │ 2025-12-24 │ 2025-12-24 │ ✓ On Time │
+│ 42   │ M    │ Trapping Rain Water     │ 2025-12-22 │ 2025-12-24 │ ⚠ Delayed │
+│      │      │                         │            │            │   2 day(s)│
+╰──────┴──────┴─────────────────────────┴────────────┴────────────┴───────────╯
 
-```bash
-# Start timer
-lcr start 1
-
-# End timer (automatically checks in)
-lcr end 1
+                      Future Reviews (Scheduled)
+╭──────┬──────┬─────────────────────────┬────────────┬────────────┬───────────╮
+│ ID   │ Diff │ Title                   │ Scheduled  │ Days Until │ Iteration │
+├──────┼──────┼─────────────────────────┼────────────┼────────────┼───────────┤
+│ 1    │ E    │ Two Sum                 │ 2025-12-31 │ +7         │ #2        │
+│ 215  │ M    │ Kth Largest Element     │ 2026-01-11 │ +18        │ #1        │
+│ 42   │ M    │ Trapping Rain Water     │ 2026-01-30 │ +37        │ #3        │
+╰──────┴──────┴─────────────────────────┴────────────┴────────────┴───────────╯
 ```
 
-### Configuration
+---
 
-Customize LCR behavior with a YAML configuration file:
+### `lcr start` / `lcr end` - Time Tracking
 
+Track time spent solving problems.
+
+**Usage:**
 ```bash
-# Copy example config
-cp config.example.yaml ~/.lcrrc
-
-# Edit your config
-nano ~/.lcrrc
+lcr start <problem_id>
+lcr end <problem_id>
 ```
 
-Example configuration:
+**Example:**
+```bash
+lcr start 42
+# ... solve the problem ...
+lcr end 42
+```
+
+**Example Output:**
+```
+# lcr start 42
+✓ Timer started for problem 42
+Started at: 2025-12-24 09:30:00
+
+# lcr end 42
+✓ Timer stopped for problem 42
+Duration: 45 minutes 23 seconds
+
+→ Auto-checking in...
+✓ Review completed on time!
+```
+
+---
+
+### `lcr delete` - Remove Reviews
+
+Delete pending or all reviews for a problem.
+
+**Usage:**
+```bash
+lcr delete <problem_id> [--all]
+```
+
+**Examples:**
+```bash
+# Delete only pending reviews
+lcr delete 100
+
+# Delete all reviews (including completed)
+lcr delete 100 --all
+```
+
+**Example Output:**
+```
+Found 3 pending review(s) for problem 100:
+╭────────────┬──────────┬───────────╮
+│ Scheduled  │ Status   │ Iteration │
+├────────────┼──────────┼───────────┤
+│ 2025-12-31 │ Pending  │ #2        │
+│ 2026-01-11 │ Pending  │ #3        │
+│ 2026-01-28 │ Pending  │ #4        │
+╰────────────┴──────────┴───────────╯
+
+Delete 3 review(s)? [y/N]: y
+✓ Deleted 3 review(s) for problem 100
+```
+
+---
+
+## Configuration
+
+Customize LCR with a YAML configuration file at `~/.lcrrc`:
+
 ```yaml
-# Custom review intervals
+# Custom review intervals (days)
 intervals:
-  default: [1, 7, 21, 45]
-  randomization: 0.15
+  default: [1, 7, 21, 45, 90]
+  randomization: 0.15  # ±15% variation
 
-# Default settings
+# Default number of reviews when not specified
 defaults:
-  review_times: 6
+  review_times: 5
 
 # Display preferences
 display:
@@ -150,82 +334,85 @@ display:
   date_format: "%Y-%m-%d"
 ```
 
-See [CONFIGURATION.md](CONFIGURATION.md) for full documentation.
+**Setup:**
+```bash
+cp config.example.yaml ~/.lcrrc
+nano ~/.lcrrc
+```
 
-## Project Status
+See [docs/architecture/CONFIGURATION.md](docs/architecture/CONFIGURATION.md) for full configuration options.
 
-✅ **Phases 1-4 Complete** - Core functionality fully operational!
+---
 
-**Recent Additions:**
-- ✅ Configuration system with YAML support
-- ✅ Delete command for review management
-- ✅ Enhanced input parsing for problem titles
-- ✅ Comprehensive documentation
+## How It Works
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed development roadmap.
+### Spaced Repetition
+
+LCR uses spaced repetition to schedule reviews at increasing intervals:
+
+```
+Problem Added (Day 0)
+  ↓
+Review #1 (Day 1)    ← First review after 1 day
+  ↓
+Review #2 (Day 8)    ← Second review after 7 more days  
+  ↓
+Review #3 (Day 26)   ← Third review after 18 more days
+  ↓
+Review #4 (Day 61)   ← Fourth review after 35 more days
+```
+
+### Delay Cascade
+
+If you complete a review late, LCR automatically reschedules future reviews:
+
+```
+Original Schedule:
+Review #2: Dec 31 (scheduled)
+Review #3: Jan 18 (scheduled)
+Review #4: Feb 4  (scheduled)
+
+You complete Review #2 on Jan 2 (2 days late)
+  ↓
+Adjusted Schedule:
+Review #3: Jan 20 (moved +2 days)
+Review #4: Feb 6  (moved +2 days)
+```
+
+---
+
+## Documentation
+
+- **[📖 Documentation Index](docs/README.md)** - Complete documentation hub
+- **[⚙️ Configuration Guide](docs/architecture/CONFIGURATION.md)** - Customize LCR
+- **[🏗️ Database Schema](docs/architecture/DATABASE_MANAGEMENT.md)** - Data structure
+- **[🕐 Timezone Behavior](docs/architecture/TIMEZONE_BEHAVIOR.md)** - Date/time handling
+- **[💻 Development Guide](docs/development/DEVELOPMENT.md)** - Contribute to LCR
+
+---
 
 ## Development
 
-### Running Tests
-
+### Run Tests
 ```bash
 pytest
 ```
 
-### Code Formatting
-
+### Code Quality
 ```bash
-black src/ tests/
+black src/ tests/              # Format code
+mypy src/                      # Type checking
+flake8 src/                    # Linting
 ```
 
-### Type Checking
-
-```bash
-mypy src/
-```
-
-### Linting
-
-```bash
-flake8 src/
-pylint src/
-```
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Documentation
-
-- **[CONFIGURATION.md](CONFIGURATION.md)** - Complete configuration guide
-- **[DELETE_COMMAND.md](DELETE_COMMAND.md)** - Delete command documentation
-- **[DATABASE_MANAGEMENT.md](DATABASE_MANAGEMENT.md)** - Database operations
-- **[INPUT_PARSING_FEATURE.md](INPUT_PARSING_FEATURE.md)** - Input parsing details
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide
-- **[PROJECT_PLAN.md](PROJECT_PLAN.md)** - Project roadmap
-
-## Roadmap
-
-- [x] Phase 1: Project Setup & Foundation
-- [x] Phase 2: Database Design & Implementation
-- [x] Phase 3: Core Algorithm Implementation
-- [x] Phase 4: CLI Command Implementation
-- [x] Phase 5: Configuration Support (Complete)
-- [ ] Phase 5: Enhanced UX Features (In Progress)
-- [ ] Phase 6: Testing & Quality Assurance
-- [ ] Phase 7: Documentation & Deployment
-
-**Completed Features:**
-- ✅ Spaced repetition scheduling with randomization
-- ✅ Delay cascade for late reviews
-- ✅ Timer sessions with auto check-in
-- ✅ Rich CLI with colored tables
-- ✅ YAML configuration system
-- ✅ Delete command for review management
-- ✅ Flexible input parsing (IDs, titles, difficulty tags)
-- ✅ SQLite database with proper schema
-- ✅ Comprehensive documentation
+Contributions welcome! Please check the [documentation](docs/README.md) and feel free to submit a Pull Request.
