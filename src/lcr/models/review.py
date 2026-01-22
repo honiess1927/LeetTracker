@@ -78,13 +78,29 @@ class Review(BaseModel):
         return datetime.utcnow() > self.scheduled_date
 
     def delay_days(self) -> int:
-        """Calculate how many days this review was delayed.
+        """Calculate how many days this review was/is delayed.
+        
+        Uses date-based calculation (calendar days), not datetime-based (24-hour periods).
+        For completed reviews: calculates days between scheduled and actual completion dates.
+        For pending reviews: calculates days overdue from scheduled date to today's date.
         
         Returns:
-            Number of days between scheduled and actual completion.
-            Returns 0 if completed on time or not yet completed.
+            Number of days delayed. Returns 0 if on time or early.
         """
-        if not self.actual_completion_date:
-            return 0
-        delta = self.actual_completion_date - self.scheduled_date
-        return max(0, delta.days)
+        from datetime import timezone
+        
+        # Import DateTimeHelper for date conversion
+        from lcr.utils.datetime_helper import DateTimeHelper
+        
+        if self.actual_completion_date:
+            # For completed reviews: compare dates in local timezone
+            scheduled_date = DateTimeHelper.get_local_date(self.scheduled_date)
+            completed_date = DateTimeHelper.get_local_date(self.actual_completion_date)
+            delta = (completed_date - scheduled_date).days
+        else:
+            # For pending reviews: compare today's date with scheduled date in local timezone
+            scheduled_date = DateTimeHelper.get_local_date(self.scheduled_date)
+            today = DateTimeHelper.get_local_date(datetime.now(timezone.utc))
+            delta = (today - scheduled_date).days
+        
+        return max(0, delta)

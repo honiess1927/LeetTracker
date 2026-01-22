@@ -368,12 +368,9 @@ def review(
                 scheduled_str = DateTimeHelper.format_date(review.scheduled_date)
                 completed_str = DateTimeHelper.format_date(review.actual_completion_date)
                 
-                # Use date-based delay calculation (local timezone)
-                delay = DateTimeHelper.days_until_date(review.actual_completion_date, review.scheduled_date)
+                # Use the same delay logic as lcr list
+                delay = review.delay_days()
                 if delay == 0:
-                    status = "[green]✓ On Time[/green]"
-                elif delay < 0:
-                    # Completed before scheduled date (early)
                     status = "[green]✓ On Time[/green]"
                 else:
                     status = f"[red]⚠ Delayed {delay} day(s)[/red]"
